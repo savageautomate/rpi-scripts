@@ -1,0 +1,136 @@
+#!/bin/bash 
+set -e   # fail on error
+
+###
+# #%L
+# **********************************************************************
+# PROJECT       :  rpi-scripts
+# FILENAME      :  rpi-kernel-build
+# **********************************************************************
+# 
+# Copyright (C) 2015 Robert Savage
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#      http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# 
+###
+
+echo 
+echo
+echo "******************************************************"
+echo "******************************************************"
+echo "**                                                  **"
+echo "**  THIS IS A CUSTOM BUILD SCRIPT FOR COMPILING A   **"
+echo "**  CUSTOM BUILD OF THE RASPBERRY PI LINUX KERNEL   **"
+echo "**                                                  **"
+echo "******************************************************"
+echo "******************************************************"
+echo 
+echo " Please note that you must have the Raspberry Pi" 
+echo " cross-compiler tool chain available on your local"
+echo " build machine and also have the cross compiler"
+echo " path in your environment variables.  It may look"
+echo " something like the example below, however you will"
+echo " need to modify to account for your filesystem location"
+echo " and your local machine architecture x86/x64."
+echo 
+echo " > export PATH=\$PATH:\$HOME/rpi/tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian-x64/bin"
+echo 
+echo " [See this link for cross-compiling instructions: https://www.raspberrypi.org/documentation/linux/kernel/building.md]"
+echo
+echo
+echo " In addition to the compiler tools, you will also need"
+echo " the linux kernel that you with to build against."
+echo " The path to kernel that you want to build against must"
+echo " defined in the environment variable: KERNELDIR"
+echo
+echo " > export KERNELDIR=$HOME/dev/rpi/linux"
+
+
+# validate that a kernel director environment variable exists
+if [ -z $KERNELDIR ]
+  then
+	echo "-------------------------------"
+	echo " MISSING KERNELDIR ENV VAR"
+	echo "-------------------------------"
+	echo
+	exit
+fi
+
+# navigate to the kernel directory to build from
+cd $KERNELDIR
+
+echo
+echo "-------------------------------"
+echo " KERNEL PATH"
+echo "-------------------------------"
+echo " >> $KERNELDIR"
+
+echo
+echo "------------------------------"
+echo " GCC COMPILER VERSION"
+echo "------------------------------"
+arm-linux-gnueabihf-gcc --version
+
+echo "------------------------------"
+echo " CLEAN BEFORE BUILDING"
+echo "------------------------------"
+read -p "Do you want to clean before building <y|n>? (y) " yn
+case $yn in
+  [nN]* )    ;;
+  * ) 
+         echo "------------------------------"
+         echo "... CLEANING ..."
+         echo "------------------------------"
+         make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- clean
+         ;;
+esac
+
+if [ ! -f .config ]; then
+	echo
+	echo "------------------------------"
+	echo " PREPARE DEFAULT RPI CONFIG"
+	echo "------------------------------"
+	set -x
+	make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- bcm2709_defconfig
+	set +x
+fi
+
+echo
+echo "------------------------------"
+echo " CUSTOM CONFIGURATION"
+echo "------------------------------"
+read -p "Do you want to customize the kernel build configuration <y|n>? (n) " yn
+case $yn in
+  [yY]* ) 
+         echo
+         echo "------------------------------"
+         echo " LAUNCH TOOL FOR CUSTOM CONFIG"
+         echo "------------------------------"
+         make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- menuconfig
+         ;;
+  * )    ;;
+esac
+
+echo
+echo "------------------------------"
+echo " COMPILE KERNEL"
+echo "------------------------------"
+set -x
+make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- zImage modules dtbs
+set +x
+
+echo
+echo "------------------------------"
+echo " KERNEL BUILD COMPLETE"
+echo "------------------------------"
+echo

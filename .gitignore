@@ -1,0 +1,17 @@
+# Configuration files
+*.conf
+
+# Gedit backup files
+*~
+
+# Nano backup files
+*.backup
+
+# Vim files
+*.swp
+
+# Mac files
+.DS_Store
+
+# Windows files
+Thumbs.db

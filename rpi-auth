@@ -1,0 +1,93 @@
+#!/bin/bash 
+set -e   # fail on error
+
+###
+# #%L
+# **********************************************************************
+# PROJECT       :  rpi-scripts
+# FILENAME      :  rpi-auth
+# **********************************************************************
+# 
+# Copyright (C) 2015 Robert Savage
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#      http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# 
+###
+
+echo
+echo "******************************************************"
+echo "******************************************************"
+echo "**                                                  **"
+echo "**  THIS IS A CUSTOM SHELL SCRIPT FOR COPYING       **"
+echo "**  YOUR LOCAL DEFAULT SSH PUBLIC KEY FILE TO       **"
+echo "**  THE RASPBERRY PI AND CONFIGURING IT AS AN       **"
+echo "**  AUTHORIZED SSH KEY FOR PASSWORD-LESS SSH        **"
+echo "**  REMOTE ACCESS                                   **"
+echo "**                                                  **"
+echo "******************************************************"
+echo "******************************************************"
+echo
+
+# set Raspberry Pi host address
+USERNAME=pi
+HOST=$1
+PORT=$2
+
+# validate that a host argument was provided
+if [ -z $HOST ]; then 
+	echo "-------------------------------"
+	echo " MISSING RASPBERRY PI HOST ARG"
+	echo "-------------------------------"
+	echo "SYNTAX: ./rpi-auth {pi-host-address}"
+	echo
+	exit
+fi
+
+# allow custom port argument
+if [ -z $PORT ]; then 
+	PORT=22
+fi
+
+# display host information to user
+echo "------------------------------"
+echo " TARGET RASPBERRY PI HOST:    "
+echo "------------------------------"
+echo " ADDRESS : $HOST"
+echo " PORT    : $PORT"
+
+# copy the local SSH public key to the Raspberry Pi
+echo
+echo "------------------------------"
+echo " COPY .SSH/ID_RSA.PUB TO PI   "
+echo "------------------------------"
+echo "(Note: You may need to enter the default Raspberry Pi password below if prompted)"
+scp -P $PORT ~/.ssh/id_rsa.pub $USERNAME@$HOST:authrorized_key
+
+# SSH to the Raspberry Pi to complete the authorized_keys config
+echo
+echo "------------------------------"
+echo " APPPEND SSH KEY TO AUTH KEYS "
+echo "------------------------------"
+echo "(Note: You may need to enter the default Raspberry Pi password below if prompted)"
+ssh -p $PORT $USERNAME@$HOST bash -c "'
+mkdir -p ~/.ssh
+cat ~/authrorized_key >> ~/.ssh/authorized_keys
+rm ~/authrorized_key
+'"
+# SSH to the Raspberry Pi to complete the authorized_keys config
+echo
+echo "------------------------------"
+echo " FINISHED "
+echo "------------------------------"
+echo
+
